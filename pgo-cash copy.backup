@@ -1,0 +1,224 @@
+package gocash
+
+import (
+	"fmt"
+	"math/bits"
+	"strconv"
+)
+
+//Just because we use only two decimals usually, gas is traded to the 3 decimals
+//Money is a dollar amount and information on how to store it
+type Money struct {
+	Dollar     uint64 //The point before your decimal
+	Fractional uint64 //the point after decimal These both need new names
+	Currency   Currency
+	Negative   bool //Unused
+}
+
+//Decimal represents a decimal number
+//My previous approach was pretty numb sculled, and only worked in base 10 it seems, i dont know why
+type Decimal struct{
+
+}
+
+type OverflowError struct{}
+
+func (e *OverflowError) Error() string {
+	return "Overflow Error"
+}
+
+type WrongCurrencyError struct{}
+
+func (e *WrongCurrencyError) Error() string {
+	return "Wrong Currency"
+}
+
+func (m Money) String() string {
+	//if m.Currency.Format.SymbolLeft
+	cents := m.Fractional >> 57
+	fmt.Println(bits.TrailingZeros64(m.Fractional))
+	if m.Negative{
+		return fmt.Sprintf("-%s%d%s%d", m.Currency.Symbol, m.Dollar, ".", cents)
+	}
+	return fmt.Sprintf("%s%d%s%d", m.Currency.Symbol, m.Dollar, ".", cents)
+}
+
+//The assumed type that unmarshalled moneys will be. Set this to "" to have the unmarshaller try to determine monetary type
+//If there are multiple currencies using the same monetary format, there is no guarantee the correct one will be used
+//Unmarshaller will first look for all the monetary Codes before moving on to format match
+var UnmarshalledType string = "USD"
+
+//Add this money to another money, will return an error if they are not the same currency
+//Will throw an error if whole amounts overflow
+func (m Money) Add(second Money) (value Money, err error) {
+	return hiddenAddTwoMonies(m, second)
+}
+
+//These add and subtract functions all need to be cleaned up to properly handle negative numbers
+func (m Money) Sub(second Money) (value Money, err error) {
+	second.Negative = !second.Negative
+	return hiddenAddTwoMonies(m, second)
+}
+
+//When a user says subtract, actually just make the number !negative
+func hiddenAddTwoMonies(a Money, b Money) (c Money, err error) {
+	//we could short circuit if one of these numbers is 0, but going to skip for now
+	var overflow bool
+	var underflow bool
+	_ = underflow
+	if !a.Negative && !b.Negative {
+		c.Fractional, overflow = uint64OverflowAdd(a.Fractional, b.Fractional)
+		fmt.Println(c.Fractional >> bits.TrailingZeros64(c.Fractional))
+		if overflow {
+			a.Dollar, overflow = uint64OverflowAdd(a.Dollar, 1)
+		}
+		if overflow {
+			err = &OverflowError{}
+		}
+		c.Dollar, overflow = uint64OverflowAdd(a.Dollar, b.Dollar)
+		if overflow {
+			err = &OverflowError{}
+		}
+		return c, err
+	} else if a.Negative && b.Negative {
+		//Since both number are negative, its the same as adding them, just need to set c as a negative value
+		c.Negative = true
+		c.Fractional, overflow = uint64OverflowAdd(a.Fractional, b.Fractional)
+		if overflow {
+			a.Dollar, overflow = uint64OverflowAdd(a.Dollar, 1)
+		}
+		if overflow {
+			err = &OverflowError{}
+		}
+		c.Dollar, overflow = uint64OverflowAdd(a.Dollar, b.Dollar)
+		if overflow {
+			err = &OverflowError{}
+		}
+		return c, err
+	} else if !a.Negative && b.Negative {
+		//a - b
+		var aLessThanb bool
+		if a.Dollar == b.Dollar {
+			aLessThanb = a.Fractional < b.Fractional
+		} else {
+			aLessThanb = a.Dollar < b.Fractional
+		}
+		//If a is less than b, do the number swap style of subtraction, and set c.Negative to true
+		if aLessThanb {
+			c, underflow = subtractAMoney(b, a)
+			c.Negative = true
+			return c, nil
+		} else {
+			c, underflow = subtractAMoney(a, b)
+			return c, nil
+		}
+	} else if a.Negative && !b.Negative {
+		//-a + b
+		//do b - a
+		var bLessThana bool
+		if b.Dollar == a.Dollar {
+			bLessThana = b.Fractional < a.Fractional
+		} else {
+			bLessThana = b.Dollar < a.Fractional
+		}
+		//If a is less than b, do the number swap style of subtraction, and set c.Negative to true
+		if bLessThana {
+			c, underflow = subtractAMoney(a, b)
+			c.Negative = true
+			return c, nil
+		} else {
+			c, underflow = subtractAMoney(b, a)
+			return c, nil
+		}
+	}
+
+	return
+}
+
+//a is positive, b is negative. The operation does  +a-b. Broke it out for more control
+//Requires a to be greater than b
+func subtractAMoney(a Money, b Money) (c Money, underflow bool) {
+	c.Fractional, underflow = uint64UnderflowSub(a.Fractional, b.Fractional)
+	if underflow {
+		a.Dollar, underflow = uint64UnderflowSub(a.Dollar, 1)
+		//now need to replicate 1 - .85 when .85 is actually 85....
+		//Just take the ?ones compliment? of the number. swap the bits and add 1
+		c.Fractional = ^c.Fractional + 1
+	}
+	c.Dollar, underflow = uint64UnderflowSub(a.Dollar, b.Dollar)
+
+	return
+}
+
+func uint64OverflowAdd(a uint64, b uint64) (c uint64, overflow bool) {
+	c = a + b
+	//fmt.Println(a >> bits.TrailingZeros64(a))
+	//fmt.Println(b >> bits.TrailingZeros64(b))
+	if c < a || c < b {
+		return c, true
+	}
+	return c, false
+}
+
+func uint64UnderflowSub(a uint64, b uint64) (c uint64, underflow bool) {
+	var isSecondCentsBigger bool //If the second cents is bigger than our first cents
+	if b > a {
+		isSecondCentsBigger = true
+	}
+
+	if isSecondCentsBigger {
+		c = b - a
+		underflow = true
+	} else {
+		c = a - b
+	}
+
+	return
+}
+
+func fromStringToCents(cents string) (shiftedDecimal uint64, err error) {
+	//Shouldn't have to worry about negative numbers at all
+	shiftedDecimal, err = strconv.ParseUint(cents, 10, 64)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//bits.LeadingZeros replace < this works by checking greater than at chunk mask, if it is shift over, and add mask bit size, then recurse
+	shiftedDecimal = uint64ToShifted(shiftedDecimal)
+	return
+}
+
+//Shifts the value until its most signifigant bit is the most significant
+func uint64ToShifted(value uint64) (shiftedDecimal uint64) {
+	mask := uint64(0x8000000000000000)
+	if value == 0 {
+		return
+	}
+	shiftedDecimal = value
+	//Whatever algorithm I implement, there is probably a faster one
+	for {
+		fmt.Println(shiftedDecimal)
+		if (shiftedDecimal & mask) == mask {
+			break
+		}
+		shiftedDecimal = shiftedDecimal << 1
+	}
+	return
+}
+
+//UnmarshalJSON will have to be able to determine the type of the value, unless we set it not to
+func (m *Money) UnmarshalJSON(b []byte) (err error) {
+	//s := strings.TrimSpace(string(b))
+
+	//if unicode.IsDigit(s)
+	return
+}
+
+func MakeAMoney(dollar string, fractional string, code string) (m Money, err error) {
+	m.Dollar, err = strconv.ParseUint(dollar, 10, 64)
+	m.Fractional, err = fromStringToCents(fractional)
+	m.Currency = ParseCurrencyType(code)
+
+	return
+}

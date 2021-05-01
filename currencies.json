@@ -1,0 +1,232 @@
+[
+    {
+        "Full Name": "Bulgarian lev",
+        "Code": "BGN",
+        "Symbol": "лв"
+    },
+    {
+        "Full Name": "Swiss franc",
+        "Code": "CHF",
+        "Symbol": "CHF"
+    },
+    {
+        "Full Name": "Czech koruna",
+        "Code": "CZK",
+        "Symbol": "Kč"
+    },
+    {
+        "Full Name": "Danish krone",
+        "Code": "DKK",
+        "Symbol": "kr"
+    },
+    {
+        "Full Name": "Euro",
+        "Code": "EUR",
+        "Symbol": "€",
+        "Format":{
+            "SymbolLeft" : true,
+            "Thousands": ".",
+            "Cents": ","
+        }
+    },
+    {
+        "Full Name": "Pounds sterling",
+        "Code": "GBP",
+        "Symbol": "£"
+    },
+    {
+        "Full Name": "Croatian Kuna",
+        "Code": "HRK",
+        "Symbol": "kn"
+    },
+    {
+        "Full Name": "Georgian lari",
+        "Code": "GEL",
+        "Symbol": "₾"
+    },
+    {
+        "Full Name": "Hungarian forint",
+        "Code": "HUF",
+        "Symbol": "ft"
+    },
+    {
+        "Full Name": "Norwegian krone",
+        "Code": "NOK",
+        "Symbol": "kr"
+    },
+    {
+        "Full Name": "Polish zloty",
+        "Code": "PLN",
+        "Symbol": "zł"
+    },
+    {
+        "Full Name": "Russian ruble",
+        "Code": "RUB",
+        "Symbol": "₽"
+    },
+    {
+        "Full Name": "Romanian leu",
+        "Code": "RON",
+        "Symbol": "lei"
+    },
+    {
+        "Full Name": "Swedish krona",
+        "Code": "SEK",
+        "Symbol": "kr"
+    },
+    {
+        "Full Name": "Turkish lira",
+        "Code": "TRY",
+        "Symbol": "₺"
+    },
+    {
+        "Full Name": "Ukrainian hryvna",
+        "Code": "UAH",
+        "Symbol": "₴"
+    },
+    {
+        "Full Name": "Emirati dirham",
+        "Code": "AED",
+        "Symbol": "د.إ"
+    },
+    {
+        "Full Name": "Israeli shekel",
+        "Code": "ILS",
+        "Symbol": "₪"
+    },
+    {
+        "Full Name": "Kenyan shilling",
+        "Code": "KES",
+        "Symbol": "Ksh"
+    },
+    {
+        "Full Name": "Moroccan dirham",
+        "Code": "MAD",
+        "Symbol": ".د.م"
+    },
+    {
+        "Full Name": "Nigerian naira",
+        "Code": "NGN",
+        "Symbol": "₦"
+    },
+    {
+        "Full Name": "South african rand**",
+        "Code": "ZAR",
+        "Symbol": "R"
+    },
+    {
+        "Full Name": "Brazilian real",
+        "Code": "BRL",
+        "Symbol": "R$"
+    },
+    {
+        "Full Name": "Canadian dollars",
+        "Code": "CAD",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "Chilean peso",
+        "Code": "CLP",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "Colombian peso",
+        "Code": "COP",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "Mexican peso",
+        "Code": "MXN",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "Peruvian sol",
+        "Code": "PEN",
+        "Symbol": "S/."
+    },
+    {
+        "Full Name": "US dollar",
+        "Code": "USD",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "Australian dollars",
+        "Code": "AUD",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "Bangladeshi taka",
+        "Code": "BDT",
+        "Symbol": "৳"
+    },
+    {
+        "Full Name": "Chinese yuan",
+        "Code": "CNY",
+        "Symbol": "¥ /元"
+    },
+    {
+        "Full Name": "Hong Kong dollar",
+        "Code": "HKD",
+        "Symbol": "$ / HK$ / “元”"
+    },
+    {
+        "Full Name": "Indonesian rupiah",
+        "Code": "IDR",
+        "Symbol": "Rp"
+    },
+    {
+        "Full Name": "Indian rupee",
+        "Code": "INR",
+        "Symbol": "₹"
+    },
+    {
+        "Full Name": "Japanese yen",
+        "Code": "JPY",
+        "Symbol": "¥"
+    },
+    {
+        "Full Name": "Malaysian ringgit",
+        "Code": "MYR",
+        "Symbol": "RM"
+    },
+    {
+        "Full Name": "New Zealand dollar",
+        "Code": "NZD",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "Philippine peso",
+        "Code": "PHP",
+        "Symbol": "₱"
+    },
+    {
+        "Full Name": "Pakistani rupee",
+        "Code": "PKR",
+        "Symbol": "Rs"
+    },
+    {
+        "Full Name": "Singapore dollar",
+        "Code": "SGD",
+        "Symbol": "$"
+    },
+    {
+        "Full Name": "South Korean won",
+        "Code": "KRW",
+        "Symbol": "₩"
+    },
+    {
+        "Full Name": "Sri Lankan rupee",
+        "Code": "LKR",
+        "Symbol": "Rs"
+    },
+    {
+        "Full Name": "Thai baht",
+        "Code": "THB",
+        "Symbol": "฿"
+    },
+    {
+        "Full Name": "Vietnamese dong",
+        "Code": "VND",
+        "Symbol": "₫"
+    }
+]

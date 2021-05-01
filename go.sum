@@ -1,0 +1,4 @@
+github.com/alexander-e-andrews/GoRegexTree v0.0.0-20200627234018-ae79d536fe73 h1:Sj8TbRGH3kyA/b6xG0Gxjf7OX82o6LmaxdzgX8jX0Nc=
+github.com/alexander-e-andrews/GoRegexTree v0.0.0-20200627234018-ae79d536fe73/go.mod h1:8Uzl0Sq75veaVw/r7qD/TdWGp+mZFks1wZ72qg0zmMc=
+github.com/dlclark/regexp2 v1.4.0 h1:F1rxgk7p4uKjwIQxBs9oAXe5CqrXlCduYEJvrF4u93E=
+github.com/dlclark/regexp2 v1.4.0/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
