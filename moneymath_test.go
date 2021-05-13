@@ -15,7 +15,7 @@ func TestSubTwoPositivesOutPositive(t *testing.T) {
 	a, _ := MakeAMoney("5", "75", "USD")
 	b, _ := MakeAMoney("4", "30", "USD")
 	c, _ := a.Sub(b)
-	t.Logf("%s + %s = %s", a.String(), b.String(), c.String())
+	t.Logf("%s - %s = %s", a.String(), b.String(), c.String())
 }
 func TestAddPositivesNegativeOutNegative(t *testing.T) {
 	b, _ := MakeAMoney("5", "75", "USD")
@@ -45,7 +45,14 @@ func TestSubPositiveNegative(t *testing.T) {
 	a, _ := MakeAMoney("4", "30", "USD")
 	b.Negative = true
 	c, _ := a.Sub(b)
-	t.Logf("%s + %s = %s", a.String(), b.String(), c.String())
+	t.Logf("%s - %s = %s", a.String(), b.String(), c.String())
+}
+
+func TestSubDecimalUnderflow(t *testing.T) {
+	a, _ := MakeAMoney("5", "50", "USD")
+	b, _ := MakeAMoney("0", "75", "USD")
+	c, _ := a.Sub(b)
+	t.Logf("%s - %s = %s", a.String(), b.String(), c.String())
 }
 
 
@@ -93,6 +100,14 @@ func TestStringDecimalSub(t *testing.T){
 	t.Logf("%s - %s = %s underflow: %t", a, b, c, underflow)
 
 	a = Decimal{"50"}
+	b = Decimal{"75"}
+	c, underflow, err = a.Sub(b)
+	if err != nil{
+		t.Log("underflowed the binaires")
+	}
+	t.Logf("%s - %s = %s underflow: %t", a, b, c, underflow)
+
+	a = Decimal{"25"}
 	b = Decimal{"75"}
 	c, underflow, err = a.Sub(b)
 	if err != nil{

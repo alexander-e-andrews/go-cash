@@ -2,6 +2,7 @@ package gocash
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -31,9 +32,10 @@ func (e *WrongCurrencyError) Error() string {
 	return "Wrong Currency"
 }
 
-type StringParseError struct{
+type StringParseError struct {
 	parsedString string
 }
+
 func (e *StringParseError) Error() string {
 	return fmt.Sprintf("Could not parse %s into uint64", e.parsedString)
 }
@@ -143,8 +145,8 @@ func hiddenAddTwoMonies(a Money, b Money) (c Money, err error) {
 //Requires a to be greater than b
 func subtractAMoney(a Money, b Money) (c Money, underflow bool) {
 	var err error
-	c.Decimal, underflow , err = a.Decimal.Sub(b.Decimal)
-	if err != nil{
+	c.Decimal, underflow, err = a.Decimal.Sub(b.Decimal)
+	if err != nil {
 		fmt.Println(err)
 	}
 	if underflow {
@@ -172,6 +174,10 @@ func uint64UnderflowSub(a uint64, b uint64) (c uint64, underflow bool) {
 	if isSecondCentsBigger {
 		c = b - a
 		underflow = true
+		//Create 10^x to subtract c from to act as a carry
+		word := strconv.FormatUint(c, 10)
+		bigSub := uint64(math.Pow(10, float64(len(word))))
+		c = bigSub - c
 	} else {
 		c = a - b
 	}
@@ -179,33 +185,20 @@ func uint64UnderflowSub(a uint64, b uint64) (c uint64, underflow bool) {
 	return
 }
 
-//Shifts the value until its most signifigant bit is the most significant
-func uint64ToShifted(value uint64) (shiftedDecimal uint64) {
-	mask := uint64(0x8000000000000000)
-	if value == 0 {
-		return
-	}
-	shiftedDecimal = value
-	//Whatever algorithm I implement, there is probably a faster one
-	for {
-		fmt.Println(shiftedDecimal)
-		if (shiftedDecimal & mask) == mask {
-			break
-		}
-		shiftedDecimal = shiftedDecimal << 1
-	}
-	return
-}
-
 //UnmarshalJSON will have to be able to determine the type of the value, unless we set it not to
-func (m *Money) UnmarshalJSON(b []byte) (err error) {
-	//s := strings.TrimSpace(string(b))
-
+func (m *Money) UnmarshalJSON(bytes []byte) error {
+	s := strings.TrimSpace(string(bytes))
+	//just a temporary patch to get the money working
+	s = strings.Replace(s, "$", "", -1)
+	moneyArray := strings.Split(s, ",")
+	mu, _ := MakeAMoney(moneyArray[0], moneyArray[1], "USD")
+	m=&mu
 	//if unicode.IsDigit(s)
-	return
+	return nil
 }
 
 func MakeAMoney(dollar string, fractional string, code string) (m Money, err error) {
+
 	m.Dollar, err = strconv.ParseUint(dollar, 10, 64)
 
 	m.Decimal.d = fractional
@@ -221,25 +214,25 @@ func (d Decimal) Add(b Decimal) (c Decimal, overflow bool, err error) {
 	} else {
 		maxLength = len(b.d)
 	}
-	d.d = d.d + strings.Repeat("0", maxLength - len(d.d))
-	b.d = b.d + strings.Repeat("0", maxLength - len(b.d))
+	d.d = d.d + strings.Repeat("0", maxLength-len(d.d))
+	b.d = b.d + strings.Repeat("0", maxLength-len(b.d))
 
 	di, err := strconv.ParseUint(d.d, 10, 64)
-	if err != nil{
+	if err != nil {
 		return c, overflow, &StringParseError{d.d}
 	}
 	bi, err := strconv.ParseUint(b.d, 10, 64)
-	if err != nil{
+	if err != nil {
 		return c, overflow, &StringParseError{b.d}
 	}
-	//Need to check for normal unint64 overflow here
+	//Need to check for normal unuint64 overflow here
 	f, overflow := uint64OverflowAdd(di, bi)
-	if overflow{
+	if overflow {
 		return c, overflow, &OverflowError{}
 	}
 
 	c.d = strconv.FormatUint(f, 10)
-	if len(c.d) > maxLength{
+	if len(c.d) > maxLength {
 		c.d = strings.TrimPrefix(c.d, "1")
 		overflow = true
 	}
@@ -255,25 +248,25 @@ func (d Decimal) Sub(b Decimal) (c Decimal, underflow bool, err error) {
 	} else {
 		maxLength = len(b.d)
 	}
-	d.d = d.d + strings.Repeat("0", maxLength - len(d.d))
-	b.d = b.d + strings.Repeat("0", maxLength - len(b.d))
+	d.d = d.d + strings.Repeat("0", maxLength-len(d.d))
+	b.d = b.d + strings.Repeat("0", maxLength-len(b.d))
 
 	di, err := strconv.ParseUint(d.d, 10, 64)
-	if err != nil{
+	if err != nil {
 		return c, underflow, &StringParseError{d.d}
 	}
 	bi, err := strconv.ParseUint(b.d, 10, 64)
-	if err != nil{
+	if err != nil {
 		return c, underflow, &StringParseError{b.d}
 	}
-	//Need to check for normal unint64 overflow here
+	//Need to check for normal unuint64 overflow here
 	f, underflow := uint64UnderflowSub(di, bi)
 	/* if underflow{
 		return c, underflow, &OverflowError{}
 	} */
 
 	c.d = strconv.FormatUint(f, 10)
-	if underflow{
+	if underflow {
 		//c.d = "0" + c.d
 		underflow = true
 	}
@@ -288,21 +281,29 @@ func (d Decimal) GreaterThanEq(b Decimal) (greater bool, err error) {
 	} else {
 		maxLength = len(b.d)
 	}
-	d.d = d.d + strings.Repeat("0", maxLength - len(d.d))
-	b.d = b.d + strings.Repeat("0", maxLength - len(b.d))
+	d.d = d.d + strings.Repeat("0", maxLength-len(d.d))
+	b.d = b.d + strings.Repeat("0", maxLength-len(b.d))
 
 	di, err := strconv.ParseUint(d.d, 10, 64)
-	if err != nil{
-		return  false,&StringParseError{d.d}
+	if err != nil {
+		return false, &StringParseError{d.d}
 	}
 	bi, err := strconv.ParseUint(b.d, 10, 64)
-	if err != nil{
+	if err != nil {
 		return false, &StringParseError{b.d}
 	}
 
 	return di >= bi, nil
 }
 
-func (d Decimal) Trim() (Decimal) {
+func (d Decimal) Trim() Decimal {
 	return Decimal{d: strings.TrimRight(d.d, "0")}
+}
+
+
+func (d Money) IsZero()(bool){
+	if d.Dollar == 0 && d.Decimal.d == ""{
+		return true
+	}
+	return false
 }
