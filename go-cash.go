@@ -17,7 +17,15 @@ type Money struct {
 }
 
 type Decimal struct {
-	d string //I was hoping to be able to just use "string" and then have Decimal just act as an identifier, but that didnt give access to the string
+	D string //I was hoping to be able to just use "string" and then have Decimal just act as an identifier, but that didnt give access to the string
+}
+
+type JSONParseError struct {
+	AttemptedParse string
+}
+
+func (e *JSONParseError) Error() string {
+	return fmt.Sprintf("Something went wrong trying to parse: %s", e.AttemptedParse)
 }
 
 type OverflowError struct{}
@@ -43,9 +51,9 @@ func (e *StringParseError) Error() string {
 func (m Money) String() string {
 	//fmt.Println(bits.TrailingZeros64(m.Fractional))
 	if m.Negative {
-		return fmt.Sprintf("-%s%d%s%s", m.Currency.Symbol, m.Dollar, ".", m.Decimal.d)
+		return fmt.Sprintf("-%s%d%s%s", m.Currency.Symbol, m.Dollar, ".", m.Decimal.D)
 	}
-	return fmt.Sprintf("%s%d%s%s", m.Currency.Symbol, m.Dollar, ".", m.Decimal.d)
+	return fmt.Sprintf("%s%d%s%s", m.Currency.Symbol, m.Dollar, ".", m.Decimal.D)
 }
 
 //The assumed type that unmarshalled moneys will be. Set this to "" to have the unmarshaller try to determine monetary type
@@ -187,21 +195,41 @@ func uint64UnderflowSub(a uint64, b uint64) (c uint64, underflow bool) {
 
 //UnmarshalJSON will have to be able to determine the type of the value, unless we set it not to
 func (m *Money) UnmarshalJSON(bytes []byte) error {
-	s := strings.TrimSpace(string(bytes))
+	if len(bytes) < 1 {
+		return &JSONParseError{AttemptedParse: string(bytes)}
+	}
+	//fmt.Println(string(bytes))
+
+	s := strings.TrimRight(strings.TrimLeft(strings.TrimSpace(string(bytes)), `"`), `"`)
 	//just a temporary patch to get the money working
 	s = strings.Replace(s, "$", "", -1)
-	moneyArray := strings.Split(s, ",")
-	mu, _ := MakeAMoney(moneyArray[0], moneyArray[1], "USD")
-	m=&mu
+	moneyArray := strings.Split(s, ".")
+	var mu Money
+	if len(moneyArray) < 2 {
+		mu, _ = MakeAMoney(moneyArray[0], "00", "USD")
+		//return &JSONParseError{AttemptedParse: string(bytes)}
+	} else {
+		mu, _ = MakeAMoney(moneyArray[0], moneyArray[1], "USD")
+	}
+
+	*m = mu
+	//fmt.Println(m.String())
 	//if unicode.IsDigit(s)
 	return nil
 }
 
-func MakeAMoney(dollar string, fractional string, code string) (m Money, err error) {
+func (m *Money) MarshalJSON() ([]byte, error) {
+	//IN a weird spot. Since we made an unmarshal to take a simple input, we now need to do a complete reparcing for when we unmarshal from a marshal
+	//Could create a two part branch. If we fail to unmarshal how to struct is normaly, then we use our custom unmarshal. And maybe the user
+	//can set which type of marshalling they would like
+	return []byte("\"" + m.String() + "\""), nil
+}
 
+func MakeAMoney(dollar string, fractional string, code string) (m Money, err error) {
+	dollar = strings.ReplaceAll(dollar, ",", "")
 	m.Dollar, err = strconv.ParseUint(dollar, 10, 64)
 
-	m.Decimal.d = fractional
+	m.Decimal.D = fractional
 	m.Currency = ParseCurrencyType(code)
 
 	return
@@ -209,21 +237,21 @@ func MakeAMoney(dollar string, fractional string, code string) (m Money, err err
 
 func (d Decimal) Add(b Decimal) (c Decimal, overflow bool, err error) {
 	maxLength := 0
-	if len(d.d) > len(b.d) {
-		maxLength = len(d.d)
+	if len(d.D) > len(b.D) {
+		maxLength = len(d.D)
 	} else {
-		maxLength = len(b.d)
+		maxLength = len(b.D)
 	}
-	d.d = d.d + strings.Repeat("0", maxLength-len(d.d))
-	b.d = b.d + strings.Repeat("0", maxLength-len(b.d))
+	d.D = d.D + strings.Repeat("0", maxLength-len(d.D))
+	b.D = b.D + strings.Repeat("0", maxLength-len(b.D))
 
-	di, err := strconv.ParseUint(d.d, 10, 64)
+	di, err := strconv.ParseUint(d.D, 10, 64)
 	if err != nil {
-		return c, overflow, &StringParseError{d.d}
+		return c, overflow, &StringParseError{d.D}
 	}
-	bi, err := strconv.ParseUint(b.d, 10, 64)
+	bi, err := strconv.ParseUint(b.D, 10, 64)
 	if err != nil {
-		return c, overflow, &StringParseError{b.d}
+		return c, overflow, &StringParseError{b.D}
 	}
 	//Need to check for normal unuint64 overflow here
 	f, overflow := uint64OverflowAdd(di, bi)
@@ -231,9 +259,9 @@ func (d Decimal) Add(b Decimal) (c Decimal, overflow bool, err error) {
 		return c, overflow, &OverflowError{}
 	}
 
-	c.d = strconv.FormatUint(f, 10)
-	if len(c.d) > maxLength {
-		c.d = strings.TrimPrefix(c.d, "1")
+	c.D = strconv.FormatUint(f, 10)
+	if len(c.D) > maxLength {
+		c.D = strings.TrimPrefix(c.D, "1")
 		overflow = true
 	}
 	c = c.Trim()
@@ -243,21 +271,21 @@ func (d Decimal) Add(b Decimal) (c Decimal, overflow bool, err error) {
 //Underflow means we have gone negative
 func (d Decimal) Sub(b Decimal) (c Decimal, underflow bool, err error) {
 	maxLength := 0
-	if len(d.d) > len(b.d) {
-		maxLength = len(d.d)
+	if len(d.D) > len(b.D) {
+		maxLength = len(d.D)
 	} else {
-		maxLength = len(b.d)
+		maxLength = len(b.D)
 	}
-	d.d = d.d + strings.Repeat("0", maxLength-len(d.d))
-	b.d = b.d + strings.Repeat("0", maxLength-len(b.d))
+	d.D = d.D + strings.Repeat("0", maxLength-len(d.D))
+	b.D = b.D + strings.Repeat("0", maxLength-len(b.D))
 
-	di, err := strconv.ParseUint(d.d, 10, 64)
+	di, err := strconv.ParseUint(d.D, 10, 64)
 	if err != nil {
-		return c, underflow, &StringParseError{d.d}
+		return c, underflow, &StringParseError{d.D}
 	}
-	bi, err := strconv.ParseUint(b.d, 10, 64)
+	bi, err := strconv.ParseUint(b.D, 10, 64)
 	if err != nil {
-		return c, underflow, &StringParseError{b.d}
+		return c, underflow, &StringParseError{b.D}
 	}
 	//Need to check for normal unuint64 overflow here
 	f, underflow := uint64UnderflowSub(di, bi)
@@ -265,9 +293,9 @@ func (d Decimal) Sub(b Decimal) (c Decimal, underflow bool, err error) {
 		return c, underflow, &OverflowError{}
 	} */
 
-	c.d = strconv.FormatUint(f, 10)
+	c.D = strconv.FormatUint(f, 10)
 	if underflow {
-		//c.d = "0" + c.d
+		//c.D = "0" + c.D
 		underflow = true
 	}
 	c = c.Trim()
@@ -276,33 +304,32 @@ func (d Decimal) Sub(b Decimal) (c Decimal, underflow bool, err error) {
 
 func (d Decimal) GreaterThanEq(b Decimal) (greater bool, err error) {
 	maxLength := 0
-	if len(d.d) > len(b.d) {
-		maxLength = len(d.d)
+	if len(d.D) > len(b.D) {
+		maxLength = len(d.D)
 	} else {
-		maxLength = len(b.d)
+		maxLength = len(b.D)
 	}
-	d.d = d.d + strings.Repeat("0", maxLength-len(d.d))
-	b.d = b.d + strings.Repeat("0", maxLength-len(b.d))
+	d.D = d.D + strings.Repeat("0", maxLength-len(d.D))
+	b.D = b.D + strings.Repeat("0", maxLength-len(b.D))
 
-	di, err := strconv.ParseUint(d.d, 10, 64)
+	di, err := strconv.ParseUint(d.D, 10, 64)
 	if err != nil {
-		return false, &StringParseError{d.d}
+		return false, &StringParseError{d.D}
 	}
-	bi, err := strconv.ParseUint(b.d, 10, 64)
+	bi, err := strconv.ParseUint(b.D, 10, 64)
 	if err != nil {
-		return false, &StringParseError{b.d}
+		return false, &StringParseError{b.D}
 	}
 
 	return di >= bi, nil
 }
 
 func (d Decimal) Trim() Decimal {
-	return Decimal{d: strings.TrimRight(d.d, "0")}
+	return Decimal{D: strings.TrimRight(d.D, "0")}
 }
 
-
-func (d Money) IsZero()(bool){
-	if d.Dollar == 0 && d.Decimal.d == ""{
+func (d Money) IsZero() bool {
+	if d.Dollar == 0 && d.Decimal.D == "" {
 		return true
 	}
 	return false
