@@ -41,3 +41,37 @@ func TestParseUSDEasy(t *testing.T){
 		t.Error("Cents wrong")
 	}
 }
+
+func TestParseMicroAmount(t *testing.T){
+	m, err := ParseString("$1.008")
+	if err != nil{
+		t.Error(err)
+	}
+
+	if m.String() != "$1.008"{
+		t.Log(m.String())
+		t.Error("Did not parse right")
+	}
+}
+
+func TestParseZero(t *testing.T){
+	m, err := ParseString("$0.00")
+	if err != nil{
+		t.Error(err)
+	}
+
+	if m.String() != "$0.00"{
+		t.Log(m.String())
+		t.Error("Did not parse right")
+	}
+}
+
+func TestMarshall(t *testing.T){
+	m, _ := ParseString("$12.34")
+	b, err := json.Marshal(m)
+	if err != nil{
+		t.Error(err)
+	}
+
+	t.Log(string(b))
+}

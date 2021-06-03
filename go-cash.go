@@ -223,7 +223,7 @@ func ParseString(str string)(m Money, err error){
 	return
 }
 
-func (m *Money) MarshalJSON() ([]byte, error) {
+func (m Money) MarshalJSON() ([]byte, error) {
 	//IN a weird spot. Since we made an unmarshal to take a simple input, we now need to do a complete reparcing for when we unmarshal from a marshal
 	//Could create a two part branch. If we fail to unmarshal how to struct is normaly, then we use our custom unmarshal. And maybe the user
 	//can set which type of marshalling they would like
