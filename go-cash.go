@@ -194,28 +194,33 @@ func uint64UnderflowSub(a uint64, b uint64) (c uint64, underflow bool) {
 }
 
 //UnmarshalJSON will have to be able to determine the type of the value, unless we set it not to
-func (m *Money) UnmarshalJSON(bytes []byte) error {
+func (m *Money) UnmarshalJSON(bytes []byte)(err error) {
 	if len(bytes) < 1 {
 		return &JSONParseError{AttemptedParse: string(bytes)}
 	}
 	//fmt.Println(string(bytes))
 
-	s := strings.TrimRight(strings.TrimLeft(strings.TrimSpace(string(bytes)), `"`), `"`)
+	*m, err = ParseString(string(bytes))
+	//fmt.Println(m.String())
+	//if unicode.IsDigit(s)
+	return err
+}
+
+//ParseString takes in a monetary string in the form of $4.20 and turns it into a money. If there is any issues, it will return an err
+func ParseString(str string)(m Money, err error){
+	s := strings.TrimRight(strings.TrimLeft(strings.TrimSpace(str), `"`), `"`)
 	//just a temporary patch to get the money working
 	s = strings.Replace(s, "$", "", -1)
 	moneyArray := strings.Split(s, ".")
-	var mu Money
+	//TODO Change make error reporting a real thing
 	if len(moneyArray) < 2 {
-		mu, _ = MakeAMoney(moneyArray[0], "00", "USD")
+		m, _ = MakeAMoney(moneyArray[0], "00", "USD")
 		//return &JSONParseError{AttemptedParse: string(bytes)}
 	} else {
-		mu, _ = MakeAMoney(moneyArray[0], moneyArray[1], "USD")
+		m, _ = MakeAMoney(moneyArray[0], moneyArray[1], "USD")
 	}
 
-	*m = mu
-	//fmt.Println(m.String())
-	//if unicode.IsDigit(s)
-	return nil
+	return
 }
 
 func (m *Money) MarshalJSON() ([]byte, error) {
